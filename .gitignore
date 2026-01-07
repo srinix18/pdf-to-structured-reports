@@ -1,6 +1,7 @@
 # Add output and log directories to .gitignore
 outputs/
 logs/
+data/
 
 # Python cache
 __pycache__/
