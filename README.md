@@ -21,12 +21,14 @@ Automated Python pipeline to convert annual report PDFs into clean, readable DOC
 ### Setup
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/srinix18/pdf-to-structured-reports.git
 cd pdf-to-structured-reports
 ```
 
 2. Install dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
@@ -50,6 +52,7 @@ python main.py
 ```
 
 Place PDFs in the `data/` folder with structure:
+
 ```
 data/
   Company Name/
@@ -59,6 +62,7 @@ data/
 ## Output
 
 Generated files in `outputs/` folder:
+
 ```
 outputs/
   Company Name/
@@ -80,6 +84,7 @@ outputs/
 ## Configuration
 
 Edit `config.py` to customize:
+
 - OCR resolution (DPI)
 - Input/output directories
 - Tesseract path

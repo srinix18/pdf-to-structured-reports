@@ -13,8 +13,6 @@ from docx.shared import Pt, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from extract_text import PageText
-from extract_tables import ExtractedTable
-from segment_sections import Section
 from config import OUTPUT_DIR
 
 logger = logging.getLogger(__name__)
@@ -44,7 +42,7 @@ def create_output_directory(company_name: str, year: str) -> Path:
 
 def export_to_docx(
     pages: List[PageText],
-    sections: List[Section],
+    sections: List,
     output_path: Path,
     company_name: str,
     year: str
@@ -111,7 +109,7 @@ def export_to_docx(
 
 
 def export_tables_to_csv(
-    tables: List[ExtractedTable],
+    tables: List,
     output_path: Path
 ) -> List[Path]:
     """
@@ -155,8 +153,8 @@ def export_metadata_to_json(
     pdf_info: Dict[str, Any],
     pdf_type: str,
     pages: List[PageText],
-    sections: List[Section],
-    tables: List[ExtractedTable],
+    sections: List,
+    tables: List,
     output_path: Path,
     company_name: str,
     year: str,
@@ -240,8 +238,8 @@ def export_all(
     pdf_info: Dict[str, Any],
     pdf_type: str,
     pages: List[PageText],
-    sections: List[Section],
-    tables: List[ExtractedTable],
+    sections: List,
+    tables: List,
     company_name: str,
     year: str,
     financial_data: Dict[str, Any] = None

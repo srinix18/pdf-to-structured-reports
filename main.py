@@ -123,8 +123,9 @@ def process_single_pdf(pdf_path: Path) -> Dict[str, Any]:
         
         # Step 3: Extract text
         logger.info("Step 3/6: Extracting text...")
-        pages = extract_text(pdf_path, pdf_type)
+        pages, extraction_stats = extract_text(pdf_path, pdf_type)
         logger.info(f"  Extracted text from {len(pages)} pages")
+        logger.info(f"  Content coverage: {extraction_stats['extraction_coverage']:.1f}%")
         
         # Step 4: Clean text (minimal cleaning to preserve layout)
         logger.info("Step 4/5: Cleaning text...")
@@ -141,6 +142,11 @@ def process_single_pdf(pdf_path: Path) -> Dict[str, Any]:
         # Export just the DOCX with page-by-page content
         docx_path = export_to_docx(cleaned_pages, [], output_path, company_name, year)
         
+        # Calculate extraction completeness
+        docx_chars = total_chars
+        pdf_total_pages = pdf_info.get('pages', len(cleaned_pages))
+        completeness_pct = (extraction_stats['pages_with_content'] / pdf_total_pages * 100) if pdf_total_pages > 0 else 0
+        
         # Create simple metadata
         metadata = {
             "company": company_name,
@@ -149,9 +155,14 @@ def process_single_pdf(pdf_path: Path) -> Dict[str, Any]:
             "pdf_info": pdf_info,
             "pdf_type": pdf_type,
             "statistics": {
-                "total_pages": len(cleaned_pages),
+                "total_pages_in_pdf": pdf_total_pages,
+                "pages_processed": len(cleaned_pages),
+                "pages_with_content": extraction_stats['pages_with_content'],
                 "total_characters": total_chars,
-                "extraction_method": pdf_type
+                "avg_chars_per_page": extraction_stats['avg_chars_per_page'],
+                "extraction_method": pdf_type,
+                "extraction_coverage_percent": round(completeness_pct, 2),
+                "extraction_quality": "excellent" if completeness_pct >= 95 else "good" if completeness_pct >= 80 else "fair" if completeness_pct >= 60 else "poor"
             }
         }
         

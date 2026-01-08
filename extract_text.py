@@ -78,8 +78,24 @@ def extract_text_from_text_pdf(pdf_path: Path) -> List[PageText]:
         # Fallback to PyMuPDF
         return extract_text_with_pymupdf(pdf_path)
     
+    # Calculate extraction statistics
+    total_chars = sum(len(p.text) for p in pages)
+    pages_with_content = sum(1 for p in pages if len(p.text.strip()) > 50)
+    
+    extraction_stats = {
+        "total_pages_in_pdf": len(pages),
+        "pages_extracted": len(pages),
+        "pages_with_content": pages_with_content,
+        "total_characters": total_chars,
+        "avg_chars_per_page": total_chars / len(pages) if pages else 0,
+        "extraction_coverage": (pages_with_content / len(pages) * 100) if pages else 0
+    }
+    
     logger.info(f"Extracted text from {len(pages)} pages")
-    return pages
+    logger.info(f"Total characters: {total_chars:,}")
+    logger.info(f"Pages with content: {pages_with_content}/{len(pages)} ({extraction_stats['extraction_coverage']:.1f}%)")
+    
+    return pages, extraction_stats
 
 
 def extract_text_with_column_detection(page) -> str:
@@ -263,9 +279,22 @@ def extract_text_with_pymupdf(pdf_path: Path) -> List[PageText]:
         doc.close()
         
     except Exception as e:
-        logger.error(f"Error with PyMuPDF extraction: {e}")
+        logger.error(f"Error with PyMuPDF fallback: {e}")
     
-    return pages
+    # Calculate extraction statistics
+    total_chars = sum(len(p.text) for p in pages)
+    pages_with_content = sum(1 for p in pages if len(p.text.strip()) > 50)
+    
+    extraction_stats = {
+        "total_pages_in_pdf": len(pages),
+        "pages_extracted": len(pages),
+        "pages_with_content": pages_with_content,
+        "total_characters": total_chars,
+        "avg_chars_per_page": total_chars / len(pages) if pages else 0,
+        "extraction_coverage": (pages_with_content / len(pages) * 100) if pages else 0
+    }
+    
+    return pages, extraction_stats
 
 
 def extract_text_from_scanned_pdf(pdf_path: Path, dpi: int = OCR_DPI) -> List[PageText]:
@@ -320,20 +349,36 @@ def extract_text_from_scanned_pdf(pdf_path: Path, dpi: int = OCR_DPI) -> List[Pa
     except Exception as e:
         logger.error(f"Error during OCR extraction: {e}")
     
+    # Calculate extraction statistics
+    total_chars = sum(len(p.text) for p in pages)
+    pages_with_content = sum(1 for p in pages if len(p.text.strip()) > 50)
+    
+    extraction_stats = {
+        "total_pages_in_pdf": len(pages),
+        "pages_extracted": len(pages),
+        "pages_with_content": pages_with_content,
+        "total_characters": total_chars,
+        "avg_chars_per_page": total_chars / len(pages) if pages else 0,
+        "extraction_coverage": (pages_with_content / len(pages) * 100) if pages else 0
+    }
+    
     logger.info(f"OCR completed for {len(pages)} pages")
-    return pages
+    logger.info(f"Total characters: {total_chars:,}")
+    logger.info(f"Pages with content: {pages_with_content}/{len(pages)} ({extraction_stats['extraction_coverage']:.1f}%)")
+    
+    return pages, extraction_stats
 
 
-def extract_text(pdf_path: Path, pdf_type: str) -> List[PageText]:
+def extract_text(pdf_path: Path, pdf_type: str) -> tuple[List[PageText], dict]:
     """
-    Main function to extract text from a PDF based on its type.
+    Extract text from a PDF file based on its type.
     
     Args:
         pdf_path: Path to the PDF file
         pdf_type: Type of PDF ('text' or 'scanned')
         
     Returns:
-        List of PageText objects
+        Tuple of (List of PageText objects, extraction statistics dict)
     """
     if pdf_type == "scanned":
         return extract_text_from_scanned_pdf(pdf_path)
