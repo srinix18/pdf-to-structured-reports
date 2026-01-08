@@ -142,27 +142,49 @@ def process_single_pdf(pdf_path: Path) -> Dict[str, Any]:
         # Export just the DOCX with page-by-page content
         docx_path = export_to_docx(cleaned_pages, [], output_path, company_name, year)
         
-        # Calculate extraction completeness
-        docx_chars = total_chars
+        # Calculate extraction completeness with enhanced quality assessment
         pdf_total_pages = pdf_info.get('pages', len(cleaned_pages))
         completeness_pct = (extraction_stats['pages_with_content'] / pdf_total_pages * 100) if pdf_total_pages > 0 else 0
         
-        # Create simple metadata
+        # Determine overall extraction quality based on multiple factors
+        quality_dist = extraction_stats.get('page_quality_distribution', {})
+        good_pages = quality_dist.get('good_content_pages', 0)
+        empty_pages = quality_dist.get('empty_pages', 0)
+        
+        # Quality score: weighted by good pages and penalized by empty pages
+        quality_score = (good_pages / pdf_total_pages * 100) if pdf_total_pages > 0 else 0
+        
+        if completeness_pct >= 95 and empty_pages <= pdf_total_pages * 0.05:
+            quality_rating = "excellent"
+        elif completeness_pct >= 80 and empty_pages <= pdf_total_pages * 0.1:
+            quality_rating = "good"
+        elif completeness_pct >= 60:
+            quality_rating = "fair"
+        else:
+            quality_rating = "poor"
+        
+        # Create detailed metadata
         metadata = {
             "company": company_name,
             "year": year,
             "processing_date": datetime.now().isoformat(),
             "pdf_info": pdf_info,
             "pdf_type": pdf_type,
-            "statistics": {
+            "extraction_summary": {
                 "total_pages_in_pdf": pdf_total_pages,
                 "pages_processed": len(cleaned_pages),
                 "pages_with_content": extraction_stats['pages_with_content'],
                 "total_characters": total_chars,
-                "avg_chars_per_page": extraction_stats['avg_chars_per_page'],
+                "avg_chars_per_page": round(extraction_stats['avg_chars_per_page'], 2),
                 "extraction_method": pdf_type,
                 "extraction_coverage_percent": round(completeness_pct, 2),
-                "extraction_quality": "excellent" if completeness_pct >= 95 else "good" if completeness_pct >= 80 else "fair" if completeness_pct >= 60 else "poor"
+                "extraction_quality": quality_rating,
+                "quality_score": round(quality_score, 2)
+            },
+            "detailed_metrics": {
+                "page_quality_distribution": extraction_stats.get('page_quality_distribution', {}),
+                "character_statistics": extraction_stats.get('character_statistics', {}),
+                "potential_issues": extraction_stats.get('potential_issues', {})
             }
         }
         

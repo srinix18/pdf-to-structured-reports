@@ -78,9 +78,22 @@ def extract_text_from_text_pdf(pdf_path: Path) -> List[PageText]:
         # Fallback to PyMuPDF
         return extract_text_with_pymupdf(pdf_path)
     
-    # Calculate extraction statistics
-    total_chars = sum(len(p.text) for p in pages)
-    pages_with_content = sum(1 for p in pages if len(p.text.strip()) > 50)
+    # Calculate extraction statistics with detailed metrics
+    char_counts = [len(p.text) for p in pages]
+    stripped_counts = [len(p.text.strip()) for p in pages]
+    
+    # Categorize pages by content quality
+    empty_pages = sum(1 for c in stripped_counts if c == 0)
+    low_content_pages = sum(1 for c in stripped_counts if 0 < c <= 100)
+    moderate_content_pages = sum(1 for c in stripped_counts if 100 < c <= 1000)
+    good_content_pages = sum(1 for c in stripped_counts if c > 1000)
+    
+    total_chars = sum(char_counts)
+    pages_with_content = sum(1 for c in stripped_counts if c > 50)
+    
+    # Calculate statistical measures
+    import statistics
+    non_empty_counts = [c for c in stripped_counts if c > 0]
     
     extraction_stats = {
         "total_pages_in_pdf": len(pages),
@@ -88,12 +101,30 @@ def extract_text_from_text_pdf(pdf_path: Path) -> List[PageText]:
         "pages_with_content": pages_with_content,
         "total_characters": total_chars,
         "avg_chars_per_page": total_chars / len(pages) if pages else 0,
-        "extraction_coverage": (pages_with_content / len(pages) * 100) if pages else 0
+        "extraction_coverage": (pages_with_content / len(pages) * 100) if pages else 0,
+        "page_quality_distribution": {
+            "empty_pages": empty_pages,
+            "low_content_pages": low_content_pages,  # 1-100 chars
+            "moderate_content_pages": moderate_content_pages,  # 101-1000 chars
+            "good_content_pages": good_content_pages  # >1000 chars
+        },
+        "character_statistics": {
+            "min_chars_per_page": min(stripped_counts) if stripped_counts else 0,
+            "max_chars_per_page": max(stripped_counts) if stripped_counts else 0,
+            "median_chars_per_page": statistics.median(non_empty_counts) if non_empty_counts else 0,
+            "std_dev_chars_per_page": round(statistics.stdev(non_empty_counts), 2) if len(non_empty_counts) > 1 else 0
+        },
+        "potential_issues": {
+            "empty_or_failed_pages": empty_pages,
+            "suspiciously_low_content": low_content_pages,
+            "page_numbers_with_low_content": [p.page_number for p in pages if 0 < len(p.text.strip()) <= 100]
+        }
     }
     
     logger.info(f"Extracted text from {len(pages)} pages")
     logger.info(f"Total characters: {total_chars:,}")
     logger.info(f"Pages with content: {pages_with_content}/{len(pages)} ({extraction_stats['extraction_coverage']:.1f}%)")
+    logger.info(f"Quality: Empty={empty_pages}, Low={low_content_pages}, Moderate={moderate_content_pages}, Good={good_content_pages}")
     
     return pages, extraction_stats
 
@@ -281,9 +312,22 @@ def extract_text_with_pymupdf(pdf_path: Path) -> List[PageText]:
     except Exception as e:
         logger.error(f"Error with PyMuPDF fallback: {e}")
     
-    # Calculate extraction statistics
-    total_chars = sum(len(p.text) for p in pages)
-    pages_with_content = sum(1 for p in pages if len(p.text.strip()) > 50)
+    # Calculate extraction statistics with detailed metrics
+    char_counts = [len(p.text) for p in pages]
+    stripped_counts = [len(p.text.strip()) for p in pages]
+    
+    # Categorize pages by content quality
+    empty_pages = sum(1 for c in stripped_counts if c == 0)
+    low_content_pages = sum(1 for c in stripped_counts if 0 < c <= 100)
+    moderate_content_pages = sum(1 for c in stripped_counts if 100 < c <= 1000)
+    good_content_pages = sum(1 for c in stripped_counts if c > 1000)
+    
+    total_chars = sum(char_counts)
+    pages_with_content = sum(1 for c in stripped_counts if c > 50)
+    
+    # Calculate statistical measures
+    import statistics
+    non_empty_counts = [c for c in stripped_counts if c > 0]
     
     extraction_stats = {
         "total_pages_in_pdf": len(pages),
@@ -291,7 +335,24 @@ def extract_text_with_pymupdf(pdf_path: Path) -> List[PageText]:
         "pages_with_content": pages_with_content,
         "total_characters": total_chars,
         "avg_chars_per_page": total_chars / len(pages) if pages else 0,
-        "extraction_coverage": (pages_with_content / len(pages) * 100) if pages else 0
+        "extraction_coverage": (pages_with_content / len(pages) * 100) if pages else 0,
+        "page_quality_distribution": {
+            "empty_pages": empty_pages,
+            "low_content_pages": low_content_pages,
+            "moderate_content_pages": moderate_content_pages,
+            "good_content_pages": good_content_pages
+        },
+        "character_statistics": {
+            "min_chars_per_page": min(stripped_counts) if stripped_counts else 0,
+            "max_chars_per_page": max(stripped_counts) if stripped_counts else 0,
+            "median_chars_per_page": statistics.median(non_empty_counts) if non_empty_counts else 0,
+            "std_dev_chars_per_page": round(statistics.stdev(non_empty_counts), 2) if len(non_empty_counts) > 1 else 0
+        },
+        "potential_issues": {
+            "empty_or_failed_pages": empty_pages,
+            "suspiciously_low_content": low_content_pages,
+            "page_numbers_with_low_content": [p.page_number for p in pages if 0 < len(p.text.strip()) <= 100]
+        }
     }
     
     return pages, extraction_stats
@@ -349,9 +410,22 @@ def extract_text_from_scanned_pdf(pdf_path: Path, dpi: int = OCR_DPI) -> List[Pa
     except Exception as e:
         logger.error(f"Error during OCR extraction: {e}")
     
-    # Calculate extraction statistics
-    total_chars = sum(len(p.text) for p in pages)
-    pages_with_content = sum(1 for p in pages if len(p.text.strip()) > 50)
+    # Calculate extraction statistics with detailed metrics
+    char_counts = [len(p.text) for p in pages]
+    stripped_counts = [len(p.text.strip()) for p in pages]
+    
+    # Categorize pages by content quality
+    empty_pages = sum(1 for c in stripped_counts if c == 0)
+    low_content_pages = sum(1 for c in stripped_counts if 0 < c <= 100)
+    moderate_content_pages = sum(1 for c in stripped_counts if 100 < c <= 1000)
+    good_content_pages = sum(1 for c in stripped_counts if c > 1000)
+    
+    total_chars = sum(char_counts)
+    pages_with_content = sum(1 for c in stripped_counts if c > 50)
+    
+    # Calculate statistical measures
+    import statistics
+    non_empty_counts = [c for c in stripped_counts if c > 0]
     
     extraction_stats = {
         "total_pages_in_pdf": len(pages),
@@ -359,12 +433,30 @@ def extract_text_from_scanned_pdf(pdf_path: Path, dpi: int = OCR_DPI) -> List[Pa
         "pages_with_content": pages_with_content,
         "total_characters": total_chars,
         "avg_chars_per_page": total_chars / len(pages) if pages else 0,
-        "extraction_coverage": (pages_with_content / len(pages) * 100) if pages else 0
+        "extraction_coverage": (pages_with_content / len(pages) * 100) if pages else 0,
+        "page_quality_distribution": {
+            "empty_pages": empty_pages,
+            "low_content_pages": low_content_pages,
+            "moderate_content_pages": moderate_content_pages,
+            "good_content_pages": good_content_pages
+        },
+        "character_statistics": {
+            "min_chars_per_page": min(stripped_counts) if stripped_counts else 0,
+            "max_chars_per_page": max(stripped_counts) if stripped_counts else 0,
+            "median_chars_per_page": statistics.median(non_empty_counts) if non_empty_counts else 0,
+            "std_dev_chars_per_page": round(statistics.stdev(non_empty_counts), 2) if len(non_empty_counts) > 1 else 0
+        },
+        "potential_issues": {
+            "empty_or_failed_pages": empty_pages,
+            "suspiciously_low_content": low_content_pages,
+            "page_numbers_with_low_content": [p.page_number for p in pages if 0 < len(p.text.strip()) <= 100]
+        }
     }
     
     logger.info(f"OCR completed for {len(pages)} pages")
     logger.info(f"Total characters: {total_chars:,}")
     logger.info(f"Pages with content: {pages_with_content}/{len(pages)} ({extraction_stats['extraction_coverage']:.1f}%)")
+    logger.info(f"Quality: Empty={empty_pages}, Low={low_content_pages}, Moderate={moderate_content_pages}, Good={good_content_pages}")
     
     return pages, extraction_stats
 
