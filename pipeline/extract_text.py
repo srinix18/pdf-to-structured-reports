@@ -11,7 +11,7 @@ import fitz  # PyMuPDF
 from PIL import Image
 import pytesseract
 
-from config import OCR_DPI
+from config.config import OCR_DPI
 
 logger = logging.getLogger(__name__)
 

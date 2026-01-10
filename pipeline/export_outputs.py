@@ -12,8 +12,8 @@ from docx import Document
 from docx.shared import Pt, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-from extract_text import PageText
-from config import OUTPUT_DIR
+from pipeline.extract_text import PageText
+from config.config import OUTPUT_DIR
 
 logger = logging.getLogger(__name__)
 

@@ -1,9 +1,14 @@
 """
 Compare text extraction between PDF and generated DOCX to validate completeness.
 """
+import sys
+from pathlib import Path
+
+# Add parent directory to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 import pdfplumber
 from docx import Document
-from pathlib import Path
 
 # Paths
 pdf_path = Path(r"data\(17) Adani Green Energy Ltd.-20251230T103344Z-1-001\(17) Adani Green Energy Ltd\17_Adani Green Energy Ltd._2019_20.pdf")

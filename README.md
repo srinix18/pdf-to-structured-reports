@@ -7,8 +7,10 @@ Automated Python pipeline to convert annual report PDFs into clean, readable DOC
 - **Automatic PDF Type Detection**: Distinguishes between text-based and scanned PDFs
 - **OCR Support**: Automatically applies OCR to scanned PDFs using Tesseract
 - **Smart Column Detection**: Dynamically handles any number of pages per PDF page (1, 2, 3+), each with their own column structure
+- **Section Extraction**: Automatically detects and extracts MD&A and Letter to Stakeholders sections
 - **Layout Preservation**: Maintains proper reading order (left-to-right, top-to-bottom)
 - **Page-by-Page Organization**: Structured DOCX output with clear page separators
+- **Comprehensive Metrics**: Detailed quality analysis and extraction statistics
 - **Batch Processing**: Process multiple companies and years efficiently
 
 ## Installation
@@ -92,14 +94,35 @@ Edit `config.py` to customize:
 
 ## Architecture
 
+```
+project/
+├── pipeline/          # Core processing modules
+│   ├── detect_pdf_type.py
+│   ├── extract_text.py
+│   ├── clean_text.py
+│   ├── export_outputs.py
+│   ├── section_boundary_detector.py
+│   ├── section_content_extractor.py
+│   └── section_metadata.py
+├── tests/            # Test and validation scripts
+│   ├── test_single.py
+│   ├── test_section_extraction.py
+│   ├── compare_pdf_docx.py
+│   └── debug_headings.py
+├── config/           # Configuration settings
+│   └── config.py
+├── main.py          # Main orchestrator for batch processing
+├── data/            # Input PDF files
+├── outputs/         # Generated DOCX files
+└── logs/            # Processing logs
+```
+
+### Core Modules:
+
 - `main.py` - Main orchestrator for batch processing
-- `test_single.py` - Test single PDF processing
-- `detect_pdf_type.py` - PDF type detection (text vs scanned)
-- `extract_text.py` - Text extraction with column detection
-- `clean_text.py` - Text cleaning while preserving layout
-- `export_outputs.py` - DOCX file generation
-- `config.py` - Configuration settings
-- `utils.py` - Helper functions
+- `pipeline/` - Core extraction and processing modules
+- `tests/` - Testing and validation scripts
+- `config/` - Configuration settings
 
 ## Requirements
 

@@ -8,7 +8,7 @@ from typing import Tuple
 import pdfplumber
 import fitz  # PyMuPDF
 
-from config import MIN_TEXT_LENGTH
+from config.config import MIN_TEXT_LENGTH
 
 logger = logging.getLogger(__name__)
 

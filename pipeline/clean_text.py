@@ -6,8 +6,8 @@ import re
 from typing import List, Set, Dict
 from collections import Counter
 
-from extract_text import PageText
-from config import MIN_LINE_LENGTH, HEADER_FOOTER_THRESHOLD
+from pipeline.extract_text import PageText
+from config.config import MIN_LINE_LENGTH, HEADER_FOOTER_THRESHOLD
 
 logger = logging.getLogger(__name__)
 

@@ -10,9 +10,9 @@ from docx.shared import Pt, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from datetime import datetime
 
-from extract_text import PageText
-from section_metadata import SectionBoundary, SectionContent, SectionType
-from section_boundary_detector import SectionBoundaryDetector
+from pipeline.extract_text import PageText
+from pipeline.section_metadata import SectionBoundary, SectionContent, SectionType
+from pipeline.section_boundary_detector import SectionBoundaryDetector
 
 logger = logging.getLogger(__name__)
 

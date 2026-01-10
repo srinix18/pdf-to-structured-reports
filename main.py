@@ -9,13 +9,13 @@ from typing import List, Dict, Any
 from datetime import datetime
 from tqdm import tqdm
 
-from config import DATA_DIR, LOGS_DIR, LOG_FORMAT, LOG_LEVEL
-from detect_pdf_type import detect_pdf_type, get_pdf_info
-from extract_text import extract_text
-from clean_text import clean_pages
-from export_outputs import export_to_docx, create_output_directory
-from section_boundary_detector import SectionBoundaryDetector
-from section_content_extractor import extract_sections_from_pdf
+from config.config import DATA_DIR, LOGS_DIR, LOG_FORMAT, LOG_LEVEL
+from pipeline.detect_pdf_type import detect_pdf_type, get_pdf_info
+from pipeline.extract_text import extract_text
+from pipeline.clean_text import clean_pages
+from pipeline.export_outputs import export_to_docx, create_output_directory
+from pipeline.section_boundary_detector import SectionBoundaryDetector
+from pipeline.section_content_extractor import extract_sections_from_pdf
 
 
 def setup_logging(log_file: Path = None) -> None:

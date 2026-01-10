@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 import pdfplumber
 
-from section_metadata import (
+from pipeline.section_metadata import (
     TextBlock, SectionBoundary, SectionType, 
     SECTION_KEYWORDS, SECTION_END_KEYWORDS
 )
