@@ -127,7 +127,7 @@ Both the full report and individual sections are exported as hierarchical JSON w
 4. **Section Extraction**: Automatic boundary detection for MD&A and Letter to Stakeholders
    - **Layout Analysis**: Extracts PDF text blocks with position, font size, and formatting metadata
    - **Keyword-Based Detection**: Matches 123 letter patterns and 71 MD&A patterns
-   - **Multi-Stage Validation**: 
+   - **Multi-Stage Validation**:
      - Stage 1: Exact keyword matching with position scoring
      - Stage 2: Partial matching with configurable thresholds
      - Stage 3: Fuzzy matching for variations and OCR errors
@@ -156,10 +156,26 @@ Both the full report and individual sections are exported as hierarchical JSON w
 
 ### Section Extraction Performance
 
-- **Letter to Stakeholders**: 83.7% extraction rate (87/104 reports)
-- **MD&A**: 97.1% extraction rate (101/104 reports)
-- Handles reports from 90 to 600+ pages
-- Processes PDFs up to 50MB efficiently
+| Section Type               | Initial            | Enhanced Patterns  | Smart Re-extraction       | Final Rate | Method                                                                                    |
+| -------------------------- | ------------------ | ------------------ | ------------------------- | ---------- | ----------------------------------------------------------------------------------------- |
+| **Letter to Stakeholders** | 58/104<br>(55.8%)  | 58/104<br>(55.8%)  | **87/104**<br>**(83.7%)** | **83.7%**  | Layout analysis + 123 keyword patterns + context-aware detection + multi-stage validation |
+| **MD&A**                   | 101/104<br>(97.1%) | 101/104<br>(97.1%) | 101/104<br>(97.1%)        | **97.1%**  | Layout analysis + 71 keyword patterns + strict position rules                             |
+
+**Key Improvements:**
+
+- **Letter Extraction**: +27.9 percentage points (55.8% → 83.7%)
+  - Enhanced section end detection with prominent heading recognition
+  - Added 52 new letter keyword patterns (71 → 123)
+  - Context-aware font size thresholds (≥1.05x median)
+  - Multi-factor confidence scoring
+- **Processing Capability**:
+  - Handles PDFs from 90 to 600+ pages
+  - Processes files up to 50MB efficiently
+  - Skips extremely large files (>100MB) to avoid memory issues
+- **Smart Re-extraction**:
+  - Sorted by file size (small → large) for optimal processing
+  - Extracted 29 additional letters from previously failed reports
+  - Successfully processed large PDFs (21-50 MB)
 
 ## Configuration
 
