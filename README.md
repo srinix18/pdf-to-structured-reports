@@ -124,14 +124,42 @@ Both the full report and individual sections are exported as hierarchical JSON w
    - Identifies column structure within each page
    - Maintains proper reading order
 3. **Text Cleaning**: Conservative cleaning that preserves layout
-4. **Hierarchy Building**: Detects headings using deterministic heuristics
+4. **Section Extraction**: Automatic boundary detection for MD&A and Letter to Stakeholders
+   - **Layout Analysis**: Extracts PDF text blocks with position, font size, and formatting metadata
+   - **Keyword-Based Detection**: Matches 123 letter patterns and 71 MD&A patterns
+   - **Multi-Stage Validation**: 
+     - Stage 1: Exact keyword matching with position scoring
+     - Stage 2: Partial matching with configurable thresholds
+     - Stage 3: Fuzzy matching for variations and OCR errors
+   - **Context-Aware Rules**: Different heuristics per section type
+     - Letters: First 20 pages, font ≥1.05x median, or lines <50 chars
+     - MD&A: Top 40% of page (y<350), font ≥1.1x median (stricter)
+   - **Section End Detection**:
+     - Financial statement keywords (balance sheet, cash flow, etc.)
+     - New section transitions (wealth creation, financial highlights, etc.)
+     - Structural markers (board report, directors report, annexures)
+     - Prominent headings (≥1.5x-1.8x median font size)
+     - Length limits (25 pages max for letters)
+   - **Confidence Scoring**: Multi-factor scoring (0.0-1.0) based on:
+     - Keyword match strength (exact vs. fuzzy)
+     - Font size prominence
+     - Position on page
+     - Surrounding context
+5. **Hierarchy Building**: Detects headings using deterministic heuristics
    - Uppercase headings (Level 1)
    - Title case headings (Level 2)
    - Keyword matching (MD&A, Letter to Stakeholders topics)
    - Structural cues (short lines, colons, numeric prefixes)
-5. **Export**: Generates both DOCX and hierarchical JSON
+6. **Export**: Generates both DOCX and hierarchical JSON
    - DOCX with proper heading styles (Heading 1, 2, 3)
    - JSON with nested structure for NLP/analytics
+
+### Section Extraction Performance
+
+- **Letter to Stakeholders**: 83.7% extraction rate (87/104 reports)
+- **MD&A**: 97.1% extraction rate (101/104 reports)
+- Handles reports from 90 to 600+ pages
+- Processes PDFs up to 50MB efficiently
 
 ## Configuration
 
