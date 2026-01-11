@@ -113,6 +113,16 @@ def process_single_pdf(pdf_path: Path) -> Dict[str, Any]:
         result["company"] = company_name
         result["year"] = year
         
+        # Check if already processed (idempotency)
+        from config.config import OUTPUT_DIR
+        output_dir = OUTPUT_DIR / company_name / year
+        report_json = output_dir / "report.json"
+        if report_json.exists():
+            logger.info(f"✓ Skipping - already processed")
+            result["status"] = "skipped"
+            result["reason"] = "already_processed"
+            return result
+        
         # Step 1: Get PDF info
         logger.info("Step 1/6: Getting PDF information...")
         pdf_info = get_pdf_info(pdf_path)
@@ -121,13 +131,27 @@ def process_single_pdf(pdf_path: Path) -> Dict[str, Any]:
         
         # Step 2: Detect PDF type
         logger.info("Step 2/6: Detecting PDF type...")
-        pdf_type, type_metadata = detect_pdf_type(pdf_path)
-        logger.info(f"  Type: {pdf_type.upper()}")
+        try:
+            pdf_type, type_metadata = detect_pdf_type(pdf_path)
+            logger.info(f"  Type: {pdf_type.upper()}")
+        except Exception as e:
+            logger.error(f"  Error detecting PDF type: {e}")
+            result["status"] = "failed"
+            result["error"] = f"pdf_type_detection_failed: {str(e)}"
+            result["step"] = "detect_pdf_type"
+            return result
         
-        # Step 3: Extract text
+        # Step 3: Extract text (with error handling)
         logger.info("Step 3/6: Extracting text...")
-        pages, extraction_stats = extract_text(pdf_path, pdf_type)
-        logger.info(f"  Extracted text from {len(pages)} pages")
+        try:
+            pages, extraction_stats = extract_text(pdf_path, pdf_type)
+            logger.info(f"  Extracted {len(pages)} pages")
+        except Exception as e:
+            logger.error(f"  Error extracting text: {e}")
+            result["status"] = "failed"
+            result["error"] = str(e)
+            result["step"] = "extract_text"
+            return result
         logger.info(f"  Content coverage: {extraction_stats['extraction_coverage']:.1f}%")
         
         # Step 4: Clean text (minimal cleaning to preserve layout)

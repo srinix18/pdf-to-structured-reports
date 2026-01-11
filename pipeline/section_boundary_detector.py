@@ -176,8 +176,8 @@ class SectionBoundaryDetector:
         candidates = []
         
         for block in self.text_blocks:
-            # Check if this looks like a heading
-            if not self._is_potential_heading(block):
+            # Check if this looks like a heading (pass section_type for context)
+            if not self._is_potential_heading(block, section_type):
                 continue
             
             # Check if text matches section keywords
@@ -185,7 +185,7 @@ class SectionBoundaryDetector:
             
             for keyword in keywords:
                 if keyword in normalized:
-                    confidence = self._calculate_confidence(block, keyword, normalized)
+                    confidence = self._calculate_confidence(block, keyword, normalized, section_type)
                     candidates.append((block, confidence, keyword))
                     logger.debug(
                         f"Candidate heading on page {block.page_number}: "
@@ -212,55 +212,75 @@ class SectionBoundaryDetector:
             detection_method="layout_and_keywords"
         )
     
-    def _is_potential_heading(self, block: TextBlock) -> bool:
+    def _is_potential_heading(self, block: TextBlock, section_type: Optional[SectionType] = None) -> bool:
         """
         Check if text block could be a section heading.
         
-        Criteria:
-        - Line length < 120 characters
-        - In top 30% of page (approximate)
-        - Font size prominence
+        Criteria vary by section type:
+        - MD&A: Strict criteria (top of page, large font)
+        - Letter: More lenient (can be anywhere, moderate font)
         
         Args:
             block: TextBlock to evaluate
+            section_type: Optional section type for context-specific rules
             
         Returns:
             True if block could be a heading
         """
-        # Line length check
-        if block.line_length > 120:
+        # Line length check - headings are typically short
+        if block.line_length > 150:
             return False
         
-        # Y-position check (top 30% of typical page ~800pts = top 240pts)
-        if block.y_position > 300:
-            return False
-        
-        # Get page median font size
+        # Get page median font size for comparison
         page_blocks = [b for b in self.text_blocks if b.page_number == block.page_number]
-        if page_blocks:
-            page_fonts = [b.font_size for b in page_blocks]
-            median_font = sorted(page_fonts)[len(page_fonts) // 2]
+        if not page_blocks:
+            return False
+        
+        page_fonts = [b.font_size for b in page_blocks]
+        median_font = sorted(page_fonts)[len(page_fonts) // 2]
+        
+        # Letter sections can appear anywhere in early pages
+        if section_type == SectionType.LETTER_TO_STAKEHOLDERS:
+            # More lenient for letters - they often appear in first 20 pages
+            if block.page_number > 20:
+                return False
             
-            # Font should be larger than median
+            # Letter headings can be anywhere on page (not just top)
+            # But should still have some font prominence OR be very short (like "Dear Shareholders,")
+            if block.font_size >= median_font * 1.05 or block.line_length < 50:
+                return True
+            
+            return False
+        
+        # MD&A sections: stricter criteria (must be prominent heading at top of page)
+        else:
+            # Y-position check (top 40% of typical page ~800pts = top 320pts)
+            if block.y_position > 350:
+                return False
+            
+            # Font should be noticeably larger than median
             if block.font_size < median_font * 1.1:
                 return False
         
         return True
     
-    def _calculate_confidence(self, block: TextBlock, keyword: str, normalized_text: str) -> float:
+    def _calculate_confidence(self, block: TextBlock, keyword: str, normalized_text: str, 
+                             section_type: Optional[SectionType] = None) -> float:
         """
         Calculate confidence score for a heading match.
         
         Factors:
         - Keyword match quality (exact vs partial)
         - Font size prominence
-        - Y-position (prefer higher on page)
+        - Y-position (prefer higher on page for MD&A, less important for letters)
         - Line length (prefer shorter)
+        - Section type specific adjustments
         
         Args:
             block: Detected text block
             keyword: Matched keyword
             normalized_text: Normalized block text
+            section_type: Type of section being detected
             
         Returns:
             Confidence score between 0 and 1
@@ -286,16 +306,28 @@ class SectionBoundaryDetector:
                 confidence += 0.15
             elif font_ratio > 1.2:
                 confidence += 0.1
+            elif font_ratio > 1.05:
+                confidence += 0.05
         
-        # Y-position bonus (higher = better)
-        if block.y_position < 150:
-            confidence += 0.1
-        elif block.y_position < 250:
-            confidence += 0.05
+        # Position bonus - different for different section types
+        if section_type == SectionType.LETTER_TO_STAKEHOLDERS:
+            # For letters, early pages are better (less strict on y-position)
+            if block.page_number <= 10:
+                confidence += 0.1
+            elif block.page_number <= 15:
+                confidence += 0.05
+        else:
+            # For MD&A, y-position matters more
+            if block.y_position < 150:
+                confidence += 0.1
+            elif block.y_position < 250:
+                confidence += 0.05
         
-        # Line length penalty
-        if block.line_length < 50:
+        # Line length bonus (shorter is better for headings)
+        if block.line_length < 40:
             confidence += 0.05
+        elif block.line_length < 60:
+            confidence += 0.03
         
         return min(confidence, 1.0)
     
@@ -306,6 +338,8 @@ class SectionBoundaryDetector:
         End detection:
         - Another major heading appears
         - Financial statement keywords appear
+        - Structural sections (board report, annual return, etc)
+        - For letters: typically short (5-20 pages)
         - End of document
         
         Args:
@@ -318,17 +352,113 @@ class SectionBoundaryDetector:
         # Look for end indicators after start page
         subsequent_blocks = [b for b in self.text_blocks if b.page_number > start_page]
         
+        # Additional keywords that typically mark end of narrative sections
+        structural_keywords = [
+            "extract of annual return",
+            "annual return",
+            "board report",
+            "directors report",
+            "director's report",
+            "directors' report",
+            "corporate governance",
+            "corporate information",
+            "company information",
+            "particulars of employees",
+            "form no.",
+            "annexure",
+            "schedules to",
+            "notes forming part",
+            "significant accounting policies",
+            "disclosures under",
+            "statutory section"
+        ]
+        
+        # New section transition keywords (not letter greetings)
+        new_section_keywords = [
+            "key financial highlights",
+            "financial highlights",
+            "wealth creation",
+            "wealth preservation",
+            "performance highlights",
+            "business overview",
+            "our business",
+            "segment performance",
+            "operational highlights",
+            "strategic priorities",
+            "board of directors"
+        ]
+        
+        # For letters, track pages to detect consistent new section headings
+        last_heading_page = start_page
+        
         for block in subsequent_blocks:
             normalized = block.normalized_text
             
             # Check for financial statement keywords
             for end_keyword in SECTION_END_KEYWORDS:
-                if end_keyword in normalized and self._is_potential_heading(block):
+                if end_keyword in normalized and self._is_potential_heading(block, None):
                     logger.debug(
                         f"Section end detected at page {block.page_number}: "
                         f"'{block.text}' (financial statement keyword)"
                     )
                     return block.page_number - 1
+            
+            # Check for structural section markers (especially important for letters)
+            if section_type == SectionType.LETTER_TO_STAKEHOLDERS:
+                for struct_keyword in structural_keywords:
+                    if struct_keyword in normalized and self._is_potential_heading(block, None):
+                        logger.debug(
+                            f"Section end detected at page {block.page_number}: "
+                            f"'{block.text}' (structural keyword)"
+                        )
+                        return block.page_number - 1
+                
+                # Check for new section transitions (big headings that mark letter end)
+                for new_keyword in new_section_keywords:
+                    if new_keyword in normalized and self._is_potential_heading(block, None):
+                        # Get page fonts to calculate median
+                        page_fonts = [b.font_size for b in self.text_blocks 
+                                    if b.page_number == block.page_number and b.font_size > 0]
+                        median_font = sorted(page_fonts)[len(page_fonts) // 2] if page_fonts else 10
+                        
+                        # Big heading = significant font size (1.5x+ median)
+                        if block.font_size >= median_font * 1.5:
+                            logger.debug(
+                                f"Section end detected at page {block.page_number}: "
+                                f"'{block.text}' (new section heading, {block.font_size:.1f}pt)"
+                            )
+                            return block.page_number - 1
+                
+                # For letters: any prominent new heading after a few pages marks transition
+                # Skip if we're still near the start (within 3 pages) 
+                if block.page_number > start_page + 3:
+                    page_fonts = [b.font_size for b in self.text_blocks 
+                                if b.page_number == block.page_number and b.font_size > 0]
+                    median_font = sorted(page_fonts)[len(page_fonts) // 2] if page_fonts else 10
+                    
+                    # Big standalone heading (1.8x+ median, short line)
+                    if (self._is_potential_heading(block, None) and 
+                        block.font_size >= median_font * 1.8 and
+                        block.line_length < 50 and
+                        block.page_number > last_heading_page + 1):
+                        logger.debug(
+                            f"Section end detected at page {block.page_number}: "
+                            f"'{block.text}' (prominent new heading, {block.font_size:.1f}pt)"
+                        )
+                        return block.page_number - 1
+                
+                # Letters are typically short - if we're beyond 25 pages, look for any major heading
+                if block.page_number > start_page + 25:
+                    if self._is_potential_heading(block, None) and block.line_length < 80:
+                        logger.debug(
+                            f"Section end detected at page {block.page_number}: "
+                            f"'{block.text}' (letter length limit)"
+                        )
+                        return block.page_number - 1
+            
+            # Track headings for letter detection
+            if section_type == SectionType.LETTER_TO_STAKEHOLDERS and self._is_potential_heading(block, None):
+                last_heading_page = block.page_number
             
             # Check for other major section headings
             for other_type in [SectionType.MDNA, SectionType.LETTER_TO_STAKEHOLDERS]:
@@ -337,7 +467,7 @@ class SectionBoundaryDetector:
                 
                 other_keywords = SECTION_KEYWORDS.get(other_type, [])
                 for keyword in other_keywords:
-                    if keyword in normalized and self._is_potential_heading(block):
+                    if keyword in normalized and self._is_potential_heading(block, other_type):
                         logger.debug(
                             f"Section end detected at page {block.page_number}: "
                             f"'{block.text}' (other section start)"

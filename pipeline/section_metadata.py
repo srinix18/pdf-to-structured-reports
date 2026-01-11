@@ -90,30 +90,209 @@ class SectionContent:
 # Canonical keyword patterns for section detection
 SECTION_KEYWORDS = {
     SectionType.MDNA: [
+        # Full form variations
         "management discussion and analysis",
         "management's discussion and analysis",
         "managements discussion and analysis",
+        "management discussion & analysis",
+        "management's discussion & analysis",
+        "managements discussion & analysis",
+        "management discussion",  # Standalone (found in reports)
+        "management discussion and",  # Incomplete pattern
+        
+        # Abbreviations
         "md&a",
+        "md & a",
+        "md and a",
         "md a",
         "mda",
-        "financial review"
+        
+        # Financial review variations
+        "financial review",
+        "financial performance review",
+        "review of financial performance",
+        "financial performance",
+        "financial position & performance",
+        "financial position and performance",
+        "financial performance highlights",
+        "financial performance overview",
+        "financial performance ratios",
+        "discussion on financial performance",
+        "discussions on financial performance",
+        "key highlights financial performance",
+        "our financial performance",
+        "robust financial performance",
+        "strong cross cycle financial performance",
+        "strong cross-cycle financial performance",
+        "10 year financial performance",
+        "10-year financial performance",
+        
+        # Business/operational review
+        "business review",
+        "business segment review",
+        "operational review",
+        "review of operations",
+        "performance review",
+        "performance a review",
+        "performance: a review",
+        
+        # Other variations found in reports
+        "non financial performance",
+        "non-financial performance"
     ],
     SectionType.LETTER_TO_STAKEHOLDERS: [
+        # Letter headings
         "letter to stakeholders",
         "letter to shareholders",
+        "letter from stakeholders",
+        "letter from shareholders",
+        "letter from chairman",
+        "letter from the chairman",
+        "letter from ceo",
+        "letter from the ceo",
+        "letter from md",
+        "letter from the md",
+        "letter from managing director",
+        "letter from the managing director",
+        "letter from president",
+        "letter from the president",
+        
+        # Chairman messages
         "chairman's letter",
         "chairmans letter",
         "chairman's message",
         "chairmans message",
+        "chairman message",
+        "message from chairman",
+        "message from the chairman",
+        "message from our chairman",
+        "message from your chairman",
+        
+        # CEO messages
         "ceo message",
         "ceo's message",
-        "message from the chairman",
+        "ceos message",
+        "message from ceo",
         "message from the ceo",
+        "message from our ceo",
+        "message from your ceo",
+        
+        # MD messages
+        "md message",
+        "md's message",
+        "mds message",
+        "md and ceo message",
+        "md & ceo message",
+        "md and ceo's message",
+        "md & ceo's message",
+        "managing director message",
+        "managing director's message",
+        "managing directors message",
+        "message from md",
+        "message from the md",
+        "message from managing director",
+        "message from the managing director",
+        "the md and",  # Incomplete heading pattern
+        
+        # President/Founder messages  
         "president's message",
-        "letter from the chairman",
-        "letter from the ceo",
+        "presidents message",
+        "president message",
+        "message from president",
+        "message from the president",
+        "founder's message",
+        "founders message",
+        "founder message",
+        "message from founder",
+        "message from the founder",
+        
+        # Generic messages (common in reports)
+        "message from",  # Catches "MESSAGE FROM" and partial patterns
+        "message from from",  # Typo pattern found
+        "message from the",  # Incomplete pattern
+        
+        # Dear Shareholder/Stakeholder variations
         "dear stakeholders",
-        "dear shareholders"
+        "dear stakeholder",
+        "dear shareholders",
+        "dear shareholder",
+        "dear shareholder family",
+        "dear shareholder,",
+        "dear shareholders,",
+        "dear stakeholder,",
+        "dear stakeholders,",
+        
+        # Additional greeting variations
+        "dear members",
+        "dear member",
+        "dear investor",
+        "dear investors",
+        "dear friends",
+        "to our shareholders",
+        "to our stakeholders",
+        "to the shareholders",
+        "to the stakeholders",
+        "to all stakeholders",
+        "towards all stakeholders",
+        
+        # Joint addressee patterns
+        "dear shareholders and stakeholders",
+        "dear shareholders & stakeholders",
+        "dear members and shareholders",
+        
+        # Additional chairman/ceo communication styles
+        "chairman's statement",
+        "chairmans statement",
+        "chairman statement",
+        "ceo's statement",
+        "ceos statement",
+        "ceo statement",
+        "statement from chairman",
+        "statement from ceo",
+        "statement from the chairman",
+        "statement from the ceo",
+        
+        # Overview/note patterns (often used for letters)
+        "chairman's overview",
+        "chairmans overview",
+        "ceo's overview",
+        "ceos overview",
+        "chairman's note",
+        "chairmans note",
+        "ceo's note",
+        "ceos note",
+        "note from chairman",
+        "note from ceo",
+        "note from the chairman",
+        "note from the ceo",
+        
+        # Foreword patterns
+        "chairman's foreword",
+        "chairmans foreword",
+        "ceo's foreword",
+        "ceos foreword",
+        "foreword by chairman",
+        "foreword by ceo",
+        "foreword from chairman",
+        "foreword from ceo",
+        
+        # Desk patterns (common in Indian reports)
+        "from the chairman's desk",
+        "from the chairmans desk",
+        "from the ceo's desk",
+        "from the ceos desk",
+        "from chairman's desk",
+        "from chairmans desk",
+        "from ceo's desk",
+        "from ceos desk",
+        "chairman's desk",
+        "chairmans desk",
+        "ceo's desk",
+        "ceos desk",
+        "md's desk",
+        "mds desk",
+        "from the md's desk",
+        "from the mds desk"
     ]
 }
 
