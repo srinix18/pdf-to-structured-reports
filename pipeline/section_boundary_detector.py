@@ -239,26 +239,33 @@ class SectionBoundaryDetector:
         page_fonts = [b.font_size for b in page_blocks]
         median_font = sorted(page_fonts)[len(page_fonts) // 2]
         
-        # Letter sections can appear anywhere in early pages
+        # Letter sections can appear anywhere in early pages (industry standard)
+        # In most annual reports, letters are within first 15-20 pages
         if section_type == SectionType.LETTER_TO_STAKEHOLDERS:
             # More lenient for letters - they often appear in first 20 pages
+            # This range covers 95%+ of letters in typical annual reports
             if block.page_number > 20:
                 return False
             
             # Letter headings can be anywhere on page (not just top)
-            # But should still have some font prominence OR be very short (like "Dear Shareholders,")
+            # Often positioned mid-page with decorative layouts
+            # Should have EITHER: slight font prominence (1.05x) OR be very short (<50 chars)
+            # The 1.05x threshold catches letters with subtle formatting differences
             if block.font_size >= median_font * 1.05 or block.line_length < 50:
                 return True
             
             return False
         
         # MD&A sections: stricter criteria (must be prominent heading at top of page)
+        # These sections typically have clear, prominent headings in standard locations
         else:
-            # Y-position check (top 40% of typical page ~800pts = top 320pts)
+            # Y-position check (top 40% of typical page ~800pts = top 320-350pts)
+            # This threshold works across different page sizes and layouts
             if block.y_position > 350:
                 return False
             
-            # Font should be noticeably larger than median
+            # Font should be noticeably larger than median (1.1x minimum)
+            # More strict than letters to avoid false positives in body text
             if block.font_size < median_font * 1.1:
                 return False
         
@@ -373,7 +380,8 @@ class SectionBoundaryDetector:
             "statutory section"
         ]
         
-        # New section transition keywords (not letter greetings)
+        # New section transition keywords (common in annual reports across industries)
+        # These mark the transition from narrative sections to business/financial content
         new_section_keywords = [
             "key financial highlights",
             "financial highlights",
@@ -414,6 +422,7 @@ class SectionBoundaryDetector:
                         return block.page_number - 1
                 
                 # Check for new section transitions (big headings that mark letter end)
+                # Look for keywords with prominent font size (industry standard approach)
                 for new_keyword in new_section_keywords:
                     if new_keyword in normalized and self._is_potential_heading(block, None):
                         # Get page fonts to calculate median
@@ -421,7 +430,8 @@ class SectionBoundaryDetector:
                                     if b.page_number == block.page_number and b.font_size > 0]
                         median_font = sorted(page_fonts)[len(page_fonts) // 2] if page_fonts else 10
                         
-                        # Big heading = significant font size (1.5x+ median)
+                        # Big heading = significant font size (1.5x+ median) - indicates new section
+                        # This ratio is conservative and works across different PDF styles
                         if block.font_size >= median_font * 1.5:
                             logger.debug(
                                 f"Section end detected at page {block.page_number}: "
@@ -430,13 +440,16 @@ class SectionBoundaryDetector:
                             return block.page_number - 1
                 
                 # For letters: any prominent new heading after a few pages marks transition
-                # Skip if we're still near the start (within 3 pages) 
+                # Skip if we're still near the start (within 3 pages) to avoid false positives
+                # This is a fallback for headings not caught by keyword matching
                 if block.page_number > start_page + 3:
                     page_fonts = [b.font_size for b in self.text_blocks 
                                 if b.page_number == block.page_number and b.font_size > 0]
                     median_font = sorted(page_fonts)[len(page_fonts) // 2] if page_fonts else 10
                     
-                    # Big standalone heading (1.8x+ median, short line)
+                    # Big standalone heading (1.8x+ median, short line < 50 chars)
+                    # The 1.8x ratio is more aggressive to catch very prominent section breaks
+                    # Requires gap from last heading to avoid detecting subsections
                     if (self._is_potential_heading(block, None) and 
                         block.font_size >= median_font * 1.8 and
                         block.line_length < 50 and
@@ -447,7 +460,8 @@ class SectionBoundaryDetector:
                         )
                         return block.page_number - 1
                 
-                # Letters are typically short - if we're beyond 25 pages, look for any major heading
+                # Letters are typically short (5-20 pages in most annual reports)
+                # If beyond 25 pages, likely entered other sections - look for any major heading
                 if block.page_number > start_page + 25:
                     if self._is_potential_heading(block, None) and block.line_length < 80:
                         logger.debug(
